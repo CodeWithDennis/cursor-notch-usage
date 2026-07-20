@@ -1,8 +1,3 @@
-# Secrets
-.env
-.env.*
-!.env.example
-
 # Editor / IDE
 .cursor/
 .idea/

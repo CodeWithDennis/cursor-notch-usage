@@ -42,7 +42,6 @@ cat > "$MACOS/launch" <<EOF
 set -euo pipefail
 HERE="\$(cd "\$(dirname "\$0")" && pwd)"
 RESOURCES="\$(cd "\$HERE/../Resources" && pwd)"
-export BRIDGE_PORT="\${BRIDGE_PORT:-4318}"
 export PATH="/opt/homebrew/bin:/usr/local/bin:\$HOME/.nvm/versions/node/\$(ls "\$HOME/.nvm/versions/node" 2>/dev/null | sort -V | tail -1)/bin:\$PATH"
 cd "\$RESOURCES"
 exec "\$HERE/${BIN_NAME}"

@@ -32,7 +32,7 @@ actor UsageBridgeClient {
         if try await healthOK() { return }
         if await isPortInUse() {
             throw UsageBridgeError.server(
-                "Port \(Self.port) is already in use. Stop the other process or set BRIDGE_PORT."
+                "Port \(Self.port) is already in use. Stop the other process first."
             )
         }
 
@@ -46,9 +46,6 @@ actor UsageBridgeClient {
         if let nodeBin = Self.resolveNodeBinDirectory() {
             let path = environment["PATH"] ?? "/usr/bin:/bin"
             environment["PATH"] = "\(nodeBin):\(path)"
-        }
-        for (key, value) in Self.loadDotEnv(near: bridgeDir) where environment[key] == nil {
-            environment[key] = value
         }
         process.environment = environment
 
@@ -202,32 +199,6 @@ actor UsageBridgeClient {
         }
 
         throw UsageBridgeError.bridgeMissing
-    }
-
-    private nonisolated static func loadDotEnv(near bridgeDir: URL) -> [String: String] {
-        let candidates = [
-            bridgeDir.deletingLastPathComponent().appendingPathComponent(".env"),
-            bridgeDir.appendingPathComponent(".env"),
-        ]
-        for file in candidates {
-            guard let content = try? String(contentsOf: file, encoding: .utf8) else { continue }
-            var values: [String: String] = [:]
-            for rawLine in content.split(whereSeparator: \.isNewline) {
-                let line = rawLine.trimmingCharacters(in: .whitespaces)
-                if line.isEmpty || line.hasPrefix("#") { continue }
-                guard let eq = line.firstIndex(of: "=") else { continue }
-                let key = String(line[..<eq]).trimmingCharacters(in: .whitespaces)
-                var value = String(line[line.index(after: eq)...]).trimmingCharacters(in: .whitespaces)
-                if (value.hasPrefix("\"") && value.hasSuffix("\"")) ||
-                    (value.hasPrefix("'") && value.hasSuffix("'"))
-                {
-                    value = String(value.dropFirst().dropLast())
-                }
-                values[key] = value
-            }
-            return values
-        }
-        return [:]
     }
 
     private nonisolated static func resolveNodeExecutable() -> String? {

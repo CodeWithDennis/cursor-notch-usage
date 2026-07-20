@@ -24,7 +24,7 @@ No agent list, hooks, or chat monitoring — usage only. Companion to [agent-pee
 | **Swift (AppKit + SwiftUI)** | Notch panel, shape mask, hover, usage wings |
 | **Node bridge** (`bridge/`) | Reads local Cursor session + usage API |
 
-No API key or `.env` setup required. If Cursor is signed in on the machine, the bridge reuses that local session for usage.
+If Cursor is signed in on the machine, the bridge reuses that local session for usage — no extra setup.
 
 ## Install
 

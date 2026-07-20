@@ -1,12 +1,11 @@
 import { DatabaseSync } from "node:sqlite";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { dirname, join, resolve } from "node:path";
+import { join } from "node:path";
 import { homedir } from "node:os";
-import { fileURLToPath } from "node:url";
 
 const API_VERSION = 1;
-const PORT = Number(process.env.BRIDGE_PORT ?? 4318);
+const PORT = 4318;
 const USAGE_TTL_MS = 60_000;
 const USAGE_POLL_MS = 60_000;
 const CURSOR_STATE_DB = join(homedir(), "Library/Application Support/Cursor/User/globalStorage/state.vscdb");
@@ -29,32 +28,6 @@ let cachedUsage: UsageDTO | null = null;
 let usageFetchedAt = 0;
 let lastSnapshotEncoded = "";
 const sseClients = new Set<ServerResponse>();
-
-const here = dirname(fileURLToPath(import.meta.url));
-for (const candidate of [
-  resolve(here, "../../.env"),
-  resolve(here, "../.env"),
-  resolve(process.cwd(), ".env"),
-  resolve(process.cwd(), "../.env"),
-]) {
-  if (!existsSync(candidate)) continue;
-  for (const line of readFileSync(candidate, "utf8").split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eq = trimmed.indexOf("=");
-    if (eq <= 0) continue;
-    const key = trimmed.slice(0, eq).trim();
-    let value = trimmed.slice(eq + 1).trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-    if (!(key in process.env)) process.env[key] = value;
-  }
-  break;
-}
 
 function readCursorStateValue(key: string): string | null {
   if (!existsSync(CURSOR_STATE_DB)) return null;
