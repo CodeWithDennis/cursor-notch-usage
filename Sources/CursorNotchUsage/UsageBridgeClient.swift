@@ -214,20 +214,47 @@ actor UsageBridgeClient {
             let nested = bin + "/node"
             if FileManager.default.isExecutableFile(atPath: nested) { return nested }
         }
-        return nil
+        // Last resort: honor the login-shell PATH (e.g. Herd / fnm shims).
+        return resolveNodeFromPATH()
     }
 
     private nonisolated static func resolveNodeBinDirectory() -> String? {
-        let nvmRoot = NSHomeDirectory() + "/.nvm/versions/node"
-        guard let versions = try? FileManager.default.contentsOfDirectory(atPath: nvmRoot) else {
-            return nil
-        }
-        let sorted = versions.sorted { $0.compare($1, options: .numeric) == .orderedDescending }
-        for version in sorted {
-            let bin = "\(nvmRoot)/\(version)/bin"
-            if FileManager.default.isExecutableFile(atPath: bin + "/node") { return bin }
+        let nvmRoots = [
+            NSHomeDirectory() + "/.nvm/versions/node",
+            NSHomeDirectory() + "/Library/Application Support/Herd/config/nvm/versions/node",
+        ]
+        for nvmRoot in nvmRoots {
+            guard let versions = try? FileManager.default.contentsOfDirectory(atPath: nvmRoot) else {
+                continue
+            }
+            let sorted = versions.sorted { $0.compare($1, options: .numeric) == .orderedDescending }
+            for version in sorted {
+                let bin = "\(nvmRoot)/\(version)/bin"
+                if FileManager.default.isExecutableFile(atPath: bin + "/node") { return bin }
+            }
         }
         return nil
+    }
+
+    private nonisolated static func resolveNodeFromPATH() -> String? {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        task.arguments = ["bash", "-lc", "command -v node"]
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = Pipe()
+        do {
+            try task.run()
+            task.waitUntilExit()
+            guard task.terminationStatus == 0 else { return nil }
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let path = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            guard !path.isEmpty, FileManager.default.isExecutableFile(atPath: path) else { return nil }
+            return path
+        } catch {
+            return nil
+        }
     }
 
     private nonisolated static func decodeSnapshot(_ data: Data) throws -> BridgeSnapshot {

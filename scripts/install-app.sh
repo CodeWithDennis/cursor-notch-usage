@@ -42,7 +42,10 @@ cat > "$MACOS/launch" <<EOF
 set -euo pipefail
 HERE="\$(cd "\$(dirname "\$0")" && pwd)"
 RESOURCES="\$(cd "\$HERE/../Resources" && pwd)"
-export PATH="/opt/homebrew/bin:/usr/local/bin:\$HOME/.nvm/versions/node/\$(ls "\$HOME/.nvm/versions/node" 2>/dev/null | sort -V | tail -1)/bin:\$PATH"
+HERD_NVM="\$HOME/Library/Application Support/Herd/config/nvm/versions/node"
+HERD_NODE="\$HERD_NVM/\$(ls "\$HERD_NVM" 2>/dev/null | sort -V | tail -1)/bin"
+NVM_NODE="\$HOME/.nvm/versions/node/\$(ls "\$HOME/.nvm/versions/node" 2>/dev/null | sort -V | tail -1)/bin"
+export PATH="/opt/homebrew/bin:/usr/local/bin:\$HERD_NODE:\$NVM_NODE:\$PATH"
 cd "\$RESOURCES"
 exec "\$HERE/${BIN_NAME}"
 EOF
