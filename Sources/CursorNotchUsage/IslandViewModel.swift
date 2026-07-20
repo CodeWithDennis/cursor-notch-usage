@@ -7,6 +7,8 @@ final class IslandViewModel {
     var bridgeReady = false
     var usage: CursorUsageSummary?
     var isHovering = false
+    /// Bumped when the island moves between screens so SwiftUI remeasures the notch.
+    var geometryEpoch: UInt = 0
     /// Equal wings = max(left, right); keeps the notch gap centered.
     var measuredLeftWingWidth: CGFloat = 0
     var measuredRightWingWidth: CGFloat = 0
