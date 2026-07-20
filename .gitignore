@@ -1,0 +1,28 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Editor / IDE
+.cursor/
+.idea/
+.DS_Store
+
+# Swift
+.build/
+.swiftpm/
+DerivedData/
+*.xcodeproj/
+xcuserdata/
+
+# Node bridge
+bridge/node_modules/
+bridge/dist/
+bridge/*.log
+
+# Release artifacts
+dist/
+*.dmg
+
+# Generated iconset (keep AppIcon.png and AppIcon.icns tracked)
+Assets/AppIcon.iconset/
