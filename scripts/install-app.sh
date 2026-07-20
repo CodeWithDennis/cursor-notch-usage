@@ -42,10 +42,24 @@ cat > "$MACOS/launch" <<EOF
 set -euo pipefail
 HERE="\$(cd "\$(dirname "\$0")" && pwd)"
 RESOURCES="\$(cd "\$HERE/../Resources" && pwd)"
-HERD_NVM="\$HOME/Library/Application Support/Herd/config/nvm/versions/node"
-HERD_NODE="\$HERD_NVM/\$(ls "\$HERD_NVM" 2>/dev/null | sort -V | tail -1)/bin"
-NVM_NODE="\$HOME/.nvm/versions/node/\$(ls "\$HOME/.nvm/versions/node" 2>/dev/null | sort -V | tail -1)/bin"
-export PATH="/opt/homebrew/bin:/usr/local/bin:\$HERD_NODE:\$NVM_NODE:\$PATH"
+
+latest_node_bin() {
+  local root="\$1"
+  [[ -d "\$root" ]] || return 0
+  local version
+  version="\$(ls "\$root" 2>/dev/null | sort -V | tail -1 || true)"
+  [[ -n "\$version" ]] || return 0
+  local bin="\$root/\$version/bin"
+  [[ -x "\$bin/node" ]] || return 0
+  printf '%s' "\$bin"
+}
+
+HERD_NODE="\$(latest_node_bin "\$HOME/Library/Application Support/Herd/config/nvm/versions/node")"
+NVM_NODE="\$(latest_node_bin "\$HOME/.nvm/versions/node")"
+PATH_PREFIX="/opt/homebrew/bin:/usr/local/bin"
+[[ -n "\$HERD_NODE" ]] && PATH_PREFIX="\$PATH_PREFIX:\$HERD_NODE"
+[[ -n "\$NVM_NODE" ]] && PATH_PREFIX="\$PATH_PREFIX:\$NVM_NODE"
+export PATH="\$PATH_PREFIX:\$PATH"
 cd "\$RESOURCES"
 exec "\$HERE/${BIN_NAME}"
 EOF
