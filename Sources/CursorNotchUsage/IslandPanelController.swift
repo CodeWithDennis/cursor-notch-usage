@@ -35,10 +35,13 @@ final class IslandPanelController {
     }
 
     func show() {
-        guard let screen = NotchGeometry.primaryScreen else { return }
+        guard let screen = NotchGeometry.targetScreen else { return }
         var frame = NotchGeometry.panelFrame(on: screen)
         frame.origin = NSPoint(x: frame.minX, y: screen.frame.maxY - frame.height)
         hostingView.frame = NSRect(origin: .zero, size: frame.size)
+        viewModel.measuredLeftWingWidth = 0
+        viewModel.measuredRightWingWidth = 0
+        viewModel.geometryEpoch &+= 1
         panel.alphaValue = 1
         panel.setFrame(frame, display: true)
         panel.orderFrontRegardless()
@@ -112,7 +115,7 @@ final class IslandPanelController {
     }
 
     private func hotZone() -> NSRect {
-        guard let screen = NotchGeometry.primaryScreen else { return .zero }
+        guard let screen = NotchGeometry.targetScreen else { return .zero }
         let notch = NotchGeometry.notchFrame(on: screen)
         let fallback = notch.width + IslandLayout.wingWidthFallback * 2
         let width = viewModel.measuredIslandWidth > 1

@@ -6,14 +6,26 @@ enum NotchGeometry {
         NSScreen.screens.first
     }
 
-    static var menubarHeight: CGFloat {
-        guard let screen = primaryScreen else { return 34 }
+    /// Prefer a display with a hardware notch; fall back to the primary screen.
+    static var targetScreen: NSScreen? {
+        if let notched = NSScreen.screens.first(where: hasHardwareNotch) {
+            return notched
+        }
+        return primaryScreen
+    }
+
+    static func hasHardwareNotch(_ screen: NSScreen) -> Bool {
+        screen.auxiliaryTopLeftArea != nil && screen.auxiliaryTopRightArea != nil
+    }
+
+    static func menubarHeight(on screen: NSScreen?) -> CGFloat {
+        guard let screen else { return 34 }
         return screen.frame.maxY - screen.visibleFrame.maxY
     }
 
-    /// Exact hardware notch size from the auxiliary top areas on the primary screen.
+    /// Exact hardware notch size from the auxiliary top areas on the target screen.
     static var notchSize: CGSize {
-        notchSize(on: primaryScreen)
+        notchSize(on: targetScreen)
     }
 
     static func notchSize(on screen: NSScreen?) -> CGSize {
@@ -22,7 +34,7 @@ enum NotchGeometry {
             let left = screen.auxiliaryTopLeftArea?.width,
             let right = screen.auxiliaryTopRightArea?.width
         else {
-            return CGSize(width: 180, height: menubarHeight)
+            return CGSize(width: 180, height: menubarHeight(on: screen))
         }
 
         return CGSize(
@@ -31,7 +43,7 @@ enum NotchGeometry {
         )
     }
 
-    static func notchFrame(on screen: NSScreen? = primaryScreen) -> NSRect {
+    static func notchFrame(on screen: NSScreen? = targetScreen) -> NSRect {
         guard let screen else { return .zero }
         let size = notchSize(on: screen)
         return NSRect(
@@ -43,7 +55,7 @@ enum NotchGeometry {
     }
 
     /// Large top-anchored window so the island can grow without reflow jumps.
-    static func panelFrame(on screen: NSScreen? = primaryScreen) -> NSRect {
+    static func panelFrame(on screen: NSScreen? = targetScreen) -> NSRect {
         guard let screen else { return .zero }
         let size = NSSize(
             width: screen.frame.width / 2,

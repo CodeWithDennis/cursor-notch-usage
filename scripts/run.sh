@@ -24,5 +24,12 @@ if lsof -nP -iTCP:4318 -sTCP:LISTEN >/dev/null 2>&1; then
 fi
 
 cd "$ROOT"
+# Avoid orphaned accessory processes from earlier runs (no Dock icon, easy to miss).
+if pgrep -x "CursorNotchUsage" >/dev/null 2>&1; then
+  echo "[run] stopping previous CursorNotchUsage..."
+  pkill -x "CursorNotchUsage" 2>/dev/null || true
+  sleep 0.2
+fi
+
 echo "[run] launching Cursor Notch Usage..."
 exec swift run

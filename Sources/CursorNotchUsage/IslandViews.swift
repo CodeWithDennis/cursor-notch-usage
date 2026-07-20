@@ -30,7 +30,10 @@ private struct WingWidthKey: PreferenceKey {
 struct IslandRootView: View {
     @Bindable var viewModel: IslandViewModel
 
-    private var notchSize: CGSize { NotchGeometry.notchSize }
+    private var notchSize: CGSize {
+        _ = viewModel.geometryEpoch
+        return NotchGeometry.notchSize
+    }
 
     /// Equal wings keep the camera cutout locked to the hardware notch center.
     private var wingWidth: CGFloat {
@@ -102,9 +105,7 @@ struct IslandRootView: View {
         .frame(width: islandWidth, height: islandHeight)
         .frame(maxWidth: .infinity, alignment: .top)
         .compositingGroup()
-        // Hide until the first usage payload arrives.
-        .opacity(viewModel.usage == nil ? 0.001 : 1)
-        .allowsHitTesting(viewModel.usage != nil)
+        .opacity(viewModel.usage == nil ? 0.72 : 1)
         .contextMenu {
             Button("Quit Cursor Notch Usage") {
                 NSApp.terminate(nil)
@@ -129,62 +130,58 @@ struct IslandRootView: View {
 
     @ViewBuilder
     private var leftWing: some View {
-        if let usage = viewModel.usage {
-            HStack(spacing: 6) {
-                if viewModel.isHovering {
-                    HStack(spacing: 6) {
-                        HStack(spacing: 4) {
-                            Text("✦")
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundStyle(sparkleColor(for: usage))
-                            Text(planName(for: usage))
-                                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                                .foregroundStyle(.white.opacity(0.78))
-                        }
-
-                        Text("|")
-                            .font(.system(size: 11, weight: .medium, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.16))
+        HStack(spacing: 6) {
+            if viewModel.isHovering, let usage = viewModel.usage {
+                HStack(spacing: 6) {
+                    HStack(spacing: 4) {
+                        Text("✦")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(sparkleColor(for: usage))
+                        Text(planName(for: usage))
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.78))
                     }
-                    .transition(.opacity)
-                }
 
-                usageBucket(title: "Auto", percent: usage.autoPercentUsed)
+                    Text("|")
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.16))
+                }
+                .transition(.opacity)
             }
-            .padding(.leading, outerInset)
-            .padding(.trailing, IslandLayout.innerPad)
-            .fixedSize(horizontal: true, vertical: false)
-            .background(wingWidthReader)
-            .onPreferenceChange(WingWidthKey.self) { width in
-                updateWingWidth(\.measuredLeftWingWidth, width)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+
+            usageBucket(title: "Auto", percent: viewModel.usage?.autoPercentUsed)
         }
+        .padding(.leading, outerInset)
+        .padding(.trailing, IslandLayout.innerPad)
+        .fixedSize(horizontal: true, vertical: false)
+        .background(wingWidthReader)
+        .onPreferenceChange(WingWidthKey.self) { width in
+            updateWingWidth(\.measuredLeftWingWidth, width)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
     @ViewBuilder
     private var rightWing: some View {
-        if let usage = viewModel.usage {
-            HStack(spacing: 6) {
-                usageBucket(title: "API", percent: usage.apiPercentUsed)
+        HStack(spacing: 6) {
+            usageBucket(title: "API", percent: viewModel.usage?.apiPercentUsed)
 
-                if viewModel.isHovering, !secondaryMeta(for: usage).isEmpty {
-                    Text(secondaryMeta(for: usage))
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.34))
-                        .monospacedDigit()
-                        .transition(.opacity)
-                }
+            if viewModel.isHovering, let usage = viewModel.usage, !secondaryMeta(for: usage).isEmpty {
+                Text(secondaryMeta(for: usage))
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.34))
+                    .monospacedDigit()
+                    .transition(.opacity)
             }
-            .padding(.leading, IslandLayout.innerPad)
-            .padding(.trailing, outerInset)
-            .fixedSize(horizontal: true, vertical: false)
-            .background(wingWidthReader)
-            .onPreferenceChange(WingWidthKey.self) { width in
-                updateWingWidth(\.measuredRightWingWidth, width)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
         }
+        .padding(.leading, IslandLayout.innerPad)
+        .padding(.trailing, outerInset)
+        .fixedSize(horizontal: true, vertical: false)
+        .background(wingWidthReader)
+        .onPreferenceChange(WingWidthKey.self) { width in
+            updateWingWidth(\.measuredRightWingWidth, width)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
     }
 
     private var wingWidthReader: some View {
@@ -201,16 +198,23 @@ struct IslandRootView: View {
         viewModel[keyPath: keyPath] = width
     }
 
-    private func usageBucket(title: String, percent: Double) -> some View {
+    private func usageBucket(title: String, percent: Double?) -> some View {
         HStack(spacing: 5) {
             Text(title)
                 .font(.system(size: 11, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white.opacity(0.92))
 
-            Text("\(Int(percent.rounded()))%")
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                .foregroundStyle(percentColor(percent))
-                .monospacedDigit()
+            if let percent {
+                Text("\(Int(percent.rounded()))%")
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(percentColor(percent))
+                    .monospacedDigit()
+            } else {
+                Text("—%")
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.35))
+                    .monospacedDigit()
+            }
         }
         .lineLimit(1)
     }

@@ -25,7 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func screensChanged() {
-        // Keep the island on whichever display is currently primary (menu bar).
+        // Prefer a notched display when available (even if it is not the menu-bar screen).
         islandController?.show()
     }
 }
